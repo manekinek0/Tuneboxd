@@ -1,36 +1,46 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Tuneboxd
 
-## Getting Started
+Letterboxd для музыки: оценки релизов по 90-балльной шкале, рецензии, любимые треки, топ-10 всех времён, подписки и лента.
 
-First, run the development server:
+## Шкала оценок
+
+Пять критериев от 1 до 10:
+
+1. Рифмы / образы
+2. Структура / ритмика
+3. Реализация стиля
+4. Индивидуальность / харизма
+5. Атмосфера / вайб
+
+**Итог = (К1 + К2 + К3 + К4) × 1,4 × множитель вайба**, где множитель растёт линейно от ×1,0000 (вайб 1) до ×1,6072 (вайб 10). Максимум 90, итог округляется до целого. Формула продублирована в `src/lib/score.ts` (покрыта тестами) и в генерируемой колонке `ratings.score` в миграции.
+
+## Стек
+
+- Next.js 16 (App Router, Server Actions), Tailwind CSS 4
+- Supabase: Postgres с RLS, авторизация (email, Google, Spotify)
+- Каталог релизов из [MusicBrainz](https://musicbrainz.org), обложки из Cover Art Archive. Релиз сохраняется в базу при первом открытии его страницы.
+
+## Локальный запуск
+
+Нужны Node 20+, pnpm и Docker.
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
+pnpm install
+pnpm supabase start            # поднимет Postgres/Auth и применит миграции
+cp .env.example .env.local     # вставьте ключи из вывода `pnpm supabase status`
 pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Тесты: `pnpm test`. Проверка: `pnpm lint && pnpm build`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Вход через Google и Spotify
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. Создайте OAuth-приложения в [Google Cloud Console](https://console.cloud.google.com/apis/credentials) и [Spotify Developer Dashboard](https://developer.spotify.com/dashboard).
+2. Redirect URI в обоих: `https://<project>.supabase.co/auth/v1/callback` (локально `http://127.0.0.1:54321/auth/v1/callback`).
+3. В продакшене включите провайдеров в Supabase Dashboard → Authentication → Providers. Локально поставьте `enabled = true` в `supabase/config.toml` и задайте переменные `SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID`, `SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET`, `SUPABASE_AUTH_EXTERNAL_SPOTIFY_CLIENT_ID`, `SUPABASE_AUTH_EXTERNAL_SPOTIFY_SECRET`.
+4. Добавьте `https://<ваш-домен>/auth/callback` в Supabase → Authentication → URL Configuration → Redirect URLs.
 
-## Learn More
+## Деплой
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1. Создайте проект в Supabase и примените миграции: `pnpm supabase link --project-ref <ref> && pnpm supabase db push`.
+2. Импортируйте репозиторий в Vercel и задайте переменные из `.env.example` (`SUPABASE_SECRET_KEY` — только на сервере).
