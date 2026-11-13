@@ -47,7 +47,7 @@ export default async function Home() {
   return (
     <div className="space-y-12">
       {!viewer && (
-        <section className="rounded-2xl border border-line bg-gradient-to-br from-blue-950/60 via-violet-950/60 to-fuchsia-950/40 p-8">
+        <section className="rounded-2xl border border-line bg-gradient-to-br from-rose-950/60 via-orange-950/40 to-amber-950/30 p-8">
           <h1 className="text-3xl font-extrabold">
             Оценивай музыку <span className="accent-text">по 90-балльной шкале</span>
           </h1>
@@ -56,10 +56,10 @@ export default async function Home() {
             топ-10 всех времён и следи за оценками друзей.
           </p>
           <div className="mt-6 flex gap-3">
-            <Link href="/login" className="rounded-lg bg-violet-600 px-4 py-2 font-medium text-white hover:bg-violet-500">
+            <Link href="/login" className="rounded-full bg-accent px-4 py-2 font-semibold text-black hover:bg-accent-hover">
               Начать
             </Link>
-            <Link href="/search" className="rounded-lg border border-line px-4 py-2 hover:border-violet-500">
+            <Link href="/search" className="rounded-lg border border-line px-4 py-2 hover:border-accent">
               Найти релиз
             </Link>
           </div>
@@ -76,7 +76,7 @@ export default async function Home() {
               ))}
             </div>
           ) : (
-            <p className="text-sm text-zinc-400">
+            <p className="text-sm text-muted">
               Здесь появятся оценки людей, на которых вы подпишетесь. Найдите их в свежих оценках ниже.
             </p>
           )}
@@ -103,7 +103,7 @@ export default async function Home() {
             ))}
           </div>
         ) : (
-          <p className="text-sm text-zinc-400">Пока никто ничего не оценил. Будьте первым!</p>
+          <p className="text-sm text-muted">Пока никто ничего не оценил. Будьте первым!</p>
         )}
       </section>
     </div>

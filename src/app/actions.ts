@@ -94,6 +94,10 @@ export async function addToTop(form: FormData) {
     .order("position");
   const ids = (data ?? []).map((r) => r.release_id);
   if (!ids.includes(releaseId) && ids.length < 10) {
+    // An all-time favourite is by definition listened to.
+    await supabase
+      .from("listens")
+      .upsert({ user_id: user.id, release_id: releaseId }, { ignoreDuplicates: true });
     await supabase.rpc("set_top_releases", { release_ids: [...ids, releaseId] });
   }
   revalidatePath(`/release/${form.get("mbid")}`);

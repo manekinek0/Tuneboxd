@@ -28,19 +28,19 @@ export function RatingCard({ rating, showRelease = true }: { rating: RatingWithJ
       )}
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-x-2 text-sm">
-          <Link href={`/u/${user.username}`} className="flex items-center gap-2 font-medium hover:text-violet-300">
+          <Link href={`/u/${user.username}`} className="flex items-center gap-2 font-medium hover:text-accent">
             <Avatar name={user.display_name || user.username} url={user.avatar_url} />
             {user.display_name || user.username}
           </Link>
           {showRelease && (
             <>
-              <span className="text-zinc-500">оценил(а)</span>
-              <Link href={`/release/${release.mbid}`} className="font-medium hover:text-violet-300">
+              <span className="text-muted">оценил(а)</span>
+              <Link href={`/release/${release.mbid}`} className="font-medium hover:text-accent">
                 {release.artist} — {release.title}
               </Link>
             </>
           )}
-          <span className="text-xs text-zinc-500">{dateFmt.format(new Date(rating.updated_at))}</span>
+          <span className="text-xs text-muted">{dateFmt.format(new Date(rating.updated_at))}</span>
         </div>
         {rating.review && (
           <p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-zinc-300">{rating.review}</p>

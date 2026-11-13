@@ -24,26 +24,26 @@ async function Header() {
           <input
             name="q"
             placeholder="Найти альбом, EP, сингл…"
-            className="w-full max-w-md rounded-lg border border-line bg-panel px-3 py-1.5 text-sm outline-none focus:border-violet-500"
+            className="w-full max-w-md rounded-lg border border-line bg-panel px-3 py-1.5 text-sm outline-none focus:border-accent"
           />
         </form>
         <nav className="flex items-center gap-4 text-sm">
           {viewer ? (
             <>
-              <Link href={`/u/${viewer.username}`} className="font-medium hover:text-violet-300">
+              <Link href={`/u/${viewer.username}`} className="font-medium hover:text-accent">
                 {viewer.display_name || viewer.username}
               </Link>
-              <Link href="/settings" className="text-zinc-400 hover:text-zinc-200">
+              <Link href="/settings" className="text-muted hover:text-zinc-200">
                 Настройки
               </Link>
               <form action={signOut}>
-                <button className="text-zinc-400 hover:text-zinc-200">Выйти</button>
+                <button className="text-muted hover:text-zinc-200">Выйти</button>
               </form>
             </>
           ) : (
             <Link
               href="/login"
-              className="rounded-lg bg-violet-600 px-3 py-1.5 font-medium text-white hover:bg-violet-500"
+              className="rounded-full bg-accent px-3 py-1.5 font-semibold text-black hover:bg-accent-hover"
             >
               Войти
             </Link>

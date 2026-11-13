@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState, useTransition } from "react";
 import { saveTop } from "@/app/actions";
+import { MEDALS } from "./release";
 
 type Item = { id: string; mbid: string; title: string; artist: string; score: number | null };
 
@@ -42,15 +43,23 @@ export function TopEditor({ initial, candidates, username }: { initial: Item[]; 
         <ol className="space-y-2">
           {items.map((item, i) => (
             <li key={item.id} className="flex items-center gap-3 rounded-lg border border-line bg-panel px-3 py-2">
-              <span className="w-6 text-right font-bold tabular-nums text-violet-300">{i + 1}</span>
+              <span className="w-8 text-center font-bold tabular-nums text-accent">
+                {MEDALS[i + 1] ? (
+                  <span className="emoji text-2xl" role="img" aria-label={`${i + 1} место`}>
+                    {MEDALS[i + 1]}
+                  </span>
+                ) : (
+                  i + 1
+                )}
+              </span>
               <div className="min-w-0 flex-1">
                 <div className="truncate text-sm font-medium">{item.title}</div>
-                <div className="truncate text-xs text-zinc-400">{item.artist}</div>
+                <div className="truncate text-xs text-muted">{item.artist}</div>
               </div>
-              <button type="button" aria-label="Выше" onClick={() => move(i, i - 1)} disabled={i === 0} className="px-1 text-zinc-400 hover:text-white disabled:opacity-30">
+              <button type="button" aria-label="Выше" onClick={() => move(i, i - 1)} disabled={i === 0} className="px-1 text-muted hover:text-white disabled:opacity-30">
                 ↑
               </button>
-              <button type="button" aria-label="Ниже" onClick={() => move(i, i + 1)} disabled={i === items.length - 1} className="px-1 text-zinc-400 hover:text-white disabled:opacity-30">
+              <button type="button" aria-label="Ниже" onClick={() => move(i, i + 1)} disabled={i === items.length - 1} className="px-1 text-muted hover:text-white disabled:opacity-30">
                 ↓
               </button>
               <button
@@ -60,23 +69,23 @@ export function TopEditor({ initial, candidates, username }: { initial: Item[]; 
                   setItems(items.filter((x) => x.id !== item.id));
                   setStatus(null);
                 }}
-                className="px-1 text-zinc-500 hover:text-red-400"
+                className="px-1 text-muted hover:text-red-400"
               >
                 ✕
               </button>
             </li>
           ))}
-          {items.length === 0 && <li className="text-sm text-zinc-500">Добавьте релизы из списка справа.</li>}
+          {items.length === 0 && <li className="text-sm text-muted">Добавьте релизы из списка справа.</li>}
         </ol>
         <div className="mt-4 flex items-center gap-3">
           <button
             onClick={save}
             disabled={pending}
-            className="rounded-lg bg-violet-600 px-4 py-2 font-medium text-white hover:bg-violet-500 disabled:opacity-60"
+            className="rounded-full bg-accent px-4 py-2 font-semibold text-black hover:bg-accent-hover disabled:opacity-60"
           >
             {pending ? "Сохраняю…" : "Сохранить"}
           </button>
-          <Link href={`/u/${username}`} className="text-sm text-zinc-400 hover:text-zinc-200">
+          <Link href={`/u/${username}`} className="text-sm text-muted hover:text-zinc-200">
             К профилю
           </Link>
           {status && <span className="text-sm text-zinc-300">{status}</span>}
@@ -89,16 +98,16 @@ export function TopEditor({ initial, candidates, username }: { initial: Item[]; 
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
           placeholder="Фильтр"
-          className="mb-3 w-full rounded-lg border border-line bg-panel px-3 py-1.5 text-sm outline-none focus:border-violet-500"
+          className="mb-3 w-full rounded-lg border border-line bg-panel px-3 py-1.5 text-sm outline-none focus:border-accent"
         />
         <ul className="max-h-[60vh] space-y-1 overflow-y-auto">
           {available.map((c) => (
             <li key={c.id} className="flex items-center gap-3 rounded-lg px-3 py-1.5 hover:bg-white/5">
               <div className="min-w-0 flex-1">
                 <div className="truncate text-sm">{c.title}</div>
-                <div className="truncate text-xs text-zinc-400">{c.artist}</div>
+                <div className="truncate text-xs text-muted">{c.artist}</div>
               </div>
-              {c.score != null && <span className="text-sm font-bold text-violet-300">{c.score}</span>}
+              {c.score != null && <span className="text-sm font-bold text-accent">{c.score}</span>}
               <button
                 type="button"
                 disabled={items.length >= 10}
@@ -106,14 +115,14 @@ export function TopEditor({ initial, candidates, username }: { initial: Item[]; 
                   setItems([...items, c]);
                   setStatus(null);
                 }}
-                className="rounded border border-line px-2 text-sm hover:border-violet-500 disabled:opacity-30"
+                className="rounded border border-line px-2 text-sm hover:border-accent disabled:opacity-30"
               >
                 +
               </button>
             </li>
           ))}
           {available.length === 0 && (
-            <li className="text-sm text-zinc-500">
+            <li className="text-sm text-muted">
               Нет релизов. Найдите релиз через поиск и отметьте его прослушанным или оцените.
             </li>
           )}

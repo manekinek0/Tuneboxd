@@ -86,7 +86,7 @@ export default async function ProfilePage({ params, searchParams }: PageProps<"/
         <Avatar name={profile.display_name || profile.username} url={profile.avatar_url} size={20} />
         <div className="flex-1">
           <h1 className="text-2xl font-extrabold">{profile.display_name || profile.username}</h1>
-          <div className="text-sm text-zinc-400">@{profile.username}</div>
+          <div className="text-sm text-muted">@{profile.username}</div>
           {profile.bio && <p className="mt-2 max-w-xl whitespace-pre-line text-sm text-zinc-300">{profile.bio}</p>}
         </div>
         <dl className="flex gap-6 text-center">
@@ -94,7 +94,7 @@ export default async function ProfilePage({ params, searchParams }: PageProps<"/
           <Stat label="Оценок" value={ratings.data?.length ?? 0} />
           <div>
             <Score value={avg} className="text-xl" />
-            <div className="text-xs text-zinc-500">Средний балл</div>
+            <div className="text-xs text-muted">Средний балл</div>
           </div>
           <Stat label="Подписчики" value={followers.count ?? 0} />
           <Stat label="Подписки" value={following.count ?? 0} />
@@ -108,7 +108,7 @@ export default async function ProfilePage({ params, searchParams }: PageProps<"/
               className={
                 amFollowing.data
                   ? "rounded-lg border border-line px-4 py-2 text-sm hover:border-red-500"
-                  : "rounded-lg bg-violet-600 px-4 py-2 text-sm font-medium text-white hover:bg-violet-500"
+                  : "rounded-full bg-accent px-4 py-2 text-sm font-semibold text-black hover:bg-accent-hover"
               }
             >
               {amFollowing.data ? "Отписаться" : "Подписаться"}
@@ -116,7 +116,7 @@ export default async function ProfilePage({ params, searchParams }: PageProps<"/
           </form>
         )}
         {isMe && (
-          <Link href="/settings" className="rounded-lg border border-line px-4 py-2 text-sm hover:border-violet-500">
+          <Link href="/settings" className="rounded-lg border border-line px-4 py-2 text-sm hover:border-accent">
             Редактировать
           </Link>
         )}
@@ -126,24 +126,24 @@ export default async function ProfilePage({ params, searchParams }: PageProps<"/
         <div className="mb-4 flex items-baseline justify-between">
           <h2 className="text-lg font-bold">Топ-10 релизов всех времён</h2>
           {isMe && (
-            <Link href="/settings/top" className="text-sm text-violet-300 hover:underline">
+            <Link href="/settings/top" className="text-sm text-accent hover:underline">
               Изменить топ
             </Link>
           )}
         </div>
         {topItems.length ? (
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-5">
+          <div className="grid grid-cols-2 gap-4 pt-3 sm:grid-cols-5">
             {topItems.map((t) => (
               <ReleaseTile
                 key={t.position}
                 release={t.release}
-                badge={`#${t.position}`}
+                rank={t.position}
                 score={ratingMap.get(t.release.id)?.score ?? null}
               />
             ))}
           </div>
         ) : (
-          <p className="text-sm text-zinc-500">
+          <p className="text-sm text-muted">
             {isMe ? "Вы ещё не собрали свой топ-10." : "Топ-10 пока пуст."}
           </p>
         )}
@@ -153,10 +153,10 @@ export default async function ProfilePage({ params, searchParams }: PageProps<"/
         <div className="mb-4 flex items-baseline justify-between">
           <h2 className="text-lg font-bold">Прослушанные релизы · {total}</h2>
           <div className="flex gap-3 text-sm">
-            <Link href={`?show=${limit}`} className={sortBy === "date" ? "text-violet-300" : "text-zinc-400"}>
+            <Link href={`?show=${limit}`} className={sortBy === "date" ? "text-accent" : "text-muted"}>
               По дате
             </Link>
-            <Link href={`?sort=score&show=${limit}`} className={sortBy === "score" ? "text-violet-300" : "text-zinc-400"}>
+            <Link href={`?sort=score&show=${limit}`} className={sortBy === "score" ? "text-accent" : "text-muted"}>
               По баллу
             </Link>
           </div>
@@ -169,25 +169,25 @@ export default async function ProfilePage({ params, searchParams }: PageProps<"/
                   <Cover mbid={release.mbid} title={release.title} size="sm" />
                   <div className="min-w-0 flex-1">
                     <div className="truncate font-medium">{release.title}</div>
-                    <div className="truncate text-sm text-zinc-400">
+                    <div className="truncate text-sm text-muted">
                       {release.artist}
                       {release.release_date && ` · ${release.release_date.slice(0, 4)}`}
                     </div>
                   </div>
-                  {rating?.review && <span className="text-xs text-zinc-500" title="Есть рецензия">✎</span>}
+                  {rating?.review && <span className="text-xs text-muted" title="Есть рецензия">✎</span>}
                   <Score value={rating?.score ?? null} className="w-10 text-right text-xl" />
                 </Link>
               </li>
             ))}
           </ul>
         ) : (
-          <p className="text-sm text-zinc-500">Пока ничего не прослушано.</p>
+          <p className="text-sm text-muted">Пока ничего не прослушано.</p>
         )}
         {total > shown.length && (
           <Link
             href={qs({ show: limit + PAGE })}
             scroll={false}
-            className="mt-4 inline-block rounded-lg border border-line px-4 py-2 text-sm hover:border-violet-500"
+            className="mt-4 inline-block rounded-lg border border-line px-4 py-2 text-sm hover:border-accent"
           >
             Показать ещё ({total - shown.length})
           </Link>
@@ -201,7 +201,7 @@ function Stat({ label, value }: { label: string; value: number }) {
   return (
     <div>
       <div className="text-xl font-bold tabular-nums">{value}</div>
-      <div className="text-xs text-zinc-500">{label}</div>
+      <div className="text-xs text-muted">{label}</div>
     </div>
   );
 }

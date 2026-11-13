@@ -9,8 +9,74 @@ import {
   computeScore,
   scoreColor,
   vibeMultiplier,
+  type CriterionKey,
   type Scores,
 } from "@/lib/score";
+
+const ALL = [...CRITERIA, VIBE];
+const TICKS = Array.from({ length: 10 }, (_, i) => i + 1);
+
+/** Horizontal position of value v (1..10) under a 26px thumb. */
+const pos = (v: number) => `calc(13px + (100% - 26px) * ${(v - 1) / 9})`;
+
+function Criterion({
+  index,
+  label,
+  name,
+  value,
+  vibe,
+  onChange,
+}: {
+  index: number;
+  label: string;
+  name: CriterionKey;
+  value: number;
+  vibe: boolean;
+  onChange: (v: number) => void;
+}) {
+  const color = vibe ? "var(--color-vibe)" : "var(--color-accent)";
+  return (
+    <div className="rounded-xl bg-raised/60 px-4 pb-2 pt-3">
+      <div className="flex items-baseline justify-between">
+        <label htmlFor={`c-${name}`} className="text-[15px] font-medium">
+          <span className="mr-1.5 text-muted">{index}</span>
+          {label}
+        </label>
+        <span className="text-2xl font-bold tabular-nums" style={{ color }}>
+          {value}
+        </span>
+      </div>
+      <input
+        id={`c-${name}`}
+        type="range"
+        name={name}
+        min={1}
+        max={10}
+        step={1}
+        value={value}
+        onChange={(e) => onChange(Number(e.target.value))}
+        className="slider mt-1"
+        style={{ "--c": color, "--fill": pos(value) } as React.CSSProperties}
+      />
+      <div className="relative h-5" aria-hidden>
+        {TICKS.map((t) => (
+          <button
+            key={t}
+            type="button"
+            tabIndex={-1}
+            onClick={() => onChange(t)}
+            className={`absolute top-0 -translate-x-1/2 px-1 text-[11px] tabular-nums ${
+              t === value ? "font-bold" : "text-muted/70 hover:text-zinc-200"
+            }`}
+            style={{ left: pos(t), color: t === value ? color : undefined }}
+          >
+            {t}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export function RatingForm({
   releaseId,
@@ -29,16 +95,16 @@ export function RatingForm({
   const total = computeScore(scores);
 
   return (
-    <form action={action} className="space-y-5 rounded-2xl border border-line bg-panel p-5">
+    <form action={action} className="space-y-4 rounded-2xl bg-panel p-4">
       <input type="hidden" name="release_id" value={releaseId} />
       <input type="hidden" name="mbid" value={mbid} />
 
-      <div className="flex items-center justify-between rounded-xl bg-black/30 px-4 py-3">
-        <div className="flex gap-3">
-          {[...CRITERIA, VIBE].map((c, i) => (
+      <div className="flex items-center justify-between rounded-xl bg-black/50 px-4 py-3">
+        <div className="flex gap-3.5">
+          {ALL.map((c, i) => (
             <div key={c.key} className="text-center">
-              <div className="text-[10px] text-zinc-500">{i + 1}</div>
-              <div className={`text-xl font-bold tabular-nums ${c.key === "vibe" ? "text-violet-400" : "text-blue-400"}`}>
+              <div className="text-[10px] text-muted">{i + 1}</div>
+              <div className={`text-xl font-bold tabular-nums ${c.key === "vibe" ? "text-vibe" : "text-accent"}`}>
                 {scores[c.key]}
               </div>
             </div>
@@ -47,33 +113,24 @@ export function RatingForm({
         <div className={`text-5xl font-extrabold tabular-nums ${scoreColor(total)}`}>{total}</div>
       </div>
 
-      <div className="space-y-3">
-        {[...CRITERIA, VIBE].map((c, i) => (
-          <label key={c.key} className="block">
-            <div className="flex justify-between text-sm">
-              <span className={c.key === "vibe" ? "text-violet-300" : "text-blue-300"}>
-                {i + 1}. {c.label}
-              </span>
-              <span className="tabular-nums text-zinc-400">{scores[c.key]} / 10</span>
-            </div>
-            <input
-              type="range"
-              name={c.key}
-              min={1}
-              max={10}
-              step={1}
-              value={scores[c.key]}
-              onChange={(e) => setScores({ ...scores, [c.key]: Number(e.target.value) })}
-              className="w-full"
-            />
-          </label>
+      <div className="space-y-2">
+        {ALL.map((c, i) => (
+          <Criterion
+            key={c.key}
+            index={i + 1}
+            label={c.label}
+            name={c.key}
+            value={scores[c.key]}
+            vibe={c.key === "vibe"}
+            onChange={(v) => setScores((s) => ({ ...s, [c.key]: v }))}
+          />
         ))}
       </div>
 
-      <p className="text-xs text-zinc-500">
-        <span className="text-blue-300">{base}</span> × {BASE_FACTOR} ×{" "}
-        <span className="text-violet-300">{vibeMultiplier(scores.vibe).toFixed(4)}</span> ={" "}
-        <span className="text-zinc-300">{total}</span>
+      <p className="text-center text-xs text-muted">
+        <span className="text-accent">{base}</span> × {BASE_FACTOR} ×{" "}
+        <span className="text-vibe">{vibeMultiplier(scores.vibe).toFixed(4)}</span> ={" "}
+        <span className="font-semibold text-zinc-200">{total}</span>
       </p>
 
       <label className="block">
@@ -84,18 +141,18 @@ export function RatingForm({
           rows={5}
           maxLength={10000}
           placeholder="Что зацепило, а что нет?"
-          className="mt-1 w-full rounded-lg border border-line bg-black/30 p-3 text-sm outline-none focus:border-violet-500"
+          className="mt-1 w-full rounded-xl border border-line bg-black/40 p-3 text-sm outline-none focus:border-accent"
         />
       </label>
 
       <div className="flex items-center gap-3">
         <button
           disabled={pending}
-          className="rounded-lg bg-violet-600 px-4 py-2 font-medium text-white hover:bg-violet-500 disabled:opacity-60"
+          className="rounded-full bg-accent px-5 py-2 font-semibold text-black hover:bg-accent-hover disabled:opacity-60"
         >
           {pending ? "Сохраняю…" : initial ? "Обновить оценку" : "Оценить"}
         </button>
-        {state?.ok && <span className="text-sm text-emerald-400">Сохранено</span>}
+        {state?.ok && <span className="text-sm text-success">Сохранено</span>}
         {state?.error && <span className="text-sm text-red-400">{state.error}</span>}
       </div>
     </form>

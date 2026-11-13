@@ -13,7 +13,7 @@ export default async function SettingsPage() {
     <div className="space-y-8">
       <div className="flex items-baseline justify-between">
         <h1 className="text-2xl font-extrabold">Профиль</h1>
-        <Link href="/settings/top" className="text-sm text-violet-300 hover:underline">
+        <Link href="/settings/top" className="text-sm text-accent hover:underline">
           Изменить топ-10 →
         </Link>
       </div>

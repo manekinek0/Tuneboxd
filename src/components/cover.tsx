@@ -23,7 +23,7 @@ export function Cover({
   const px = size === "lg" ? 500 : 250;
   return (
     <div
-      className={`${SIZES[size]} shrink-0 overflow-hidden rounded-md bg-gradient-to-br from-blue-900 via-violet-900 to-fuchsia-900`}
+      className={`${SIZES[size]} shrink-0 overflow-hidden rounded-md bg-gradient-to-br from-rose-950 via-orange-950 to-amber-900`}
     >
       {failed ? (
         <div className="flex h-full w-full items-center justify-center p-2 text-center text-xs font-semibold text-white/70">

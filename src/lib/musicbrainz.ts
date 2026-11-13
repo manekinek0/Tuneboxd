@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 import { createAdminClient } from "@/lib/supabase/server";
 
 const API = "https://musicbrainz.org/ws/2";
@@ -81,7 +82,7 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
  * Returns the local release id for a MusicBrainz release group, importing it
  * (metadata + tracklist of the earliest official release) on first access.
  */
-export async function ensureRelease(mbid: string): Promise<string | null> {
+export const ensureRelease = cache(async (mbid: string): Promise<string | null> => {
   if (!UUID.test(mbid)) return null;
   const admin = createAdminClient();
 
@@ -144,7 +145,7 @@ export async function ensureRelease(mbid: string): Promise<string | null> {
     if (tracksError) throw tracksError;
   }
   return inserted.id;
-}
+});
 
 const TYPE_LABELS: Record<string, string> = {
   Album: "Альбом",

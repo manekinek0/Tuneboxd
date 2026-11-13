@@ -92,7 +92,7 @@ export default async function ReleasePage({ params }: PageProps<"/release/[mbid]
         <section className="flex flex-col gap-6 sm:flex-row">
           <Cover mbid={mbid} title={release.title} size="lg" />
           <div className="flex flex-col justify-end gap-2">
-            <div className="text-sm text-zinc-400">
+            <div className="text-sm text-muted">
               {typeLabel(release.primary_type, release.secondary_types)}
               {release.release_date && ` · ${release.release_date}`}
             </div>
@@ -100,25 +100,36 @@ export default async function ReleasePage({ params }: PageProps<"/release/[mbid]
             <div className="text-lg text-zinc-300">{release.artist}</div>
             <div className="mt-4 flex items-end gap-6">
               <div>
-                <div className="text-xs uppercase tracking-wide text-zinc-500">Средний балл</div>
+                <div className="text-xs uppercase tracking-wide text-muted">Средний балл</div>
                 <Score value={stats?.avg_score ?? null} className="text-5xl" />
               </div>
-              <div className="pb-1 text-sm text-zinc-400">
+              <div className="pb-1 text-sm text-muted">
                 {stats?.ratings_count ?? 0} {plural(stats?.ratings_count ?? 0, "оценка", "оценки", "оценок")}
               </div>
             </div>
             {stats && (
-              <dl className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-zinc-400">
+              <dl className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted">
                 {[...CRITERIA, VIBE].map((c) => (
                   <div key={c.key}>
                     {c.label}:{" "}
-                    <span className={c.key === "vibe" ? "text-violet-300" : "text-blue-300"}>
+                    <span className={c.key === "vibe" ? "text-vibe" : "text-accent"}>
                       {stats[`avg_${c.key}` as keyof typeof stats]}
                     </span>
                   </div>
                 ))}
               </dl>
             )}
+            <a
+              href={`https://open.spotify.com/search/${encodeURIComponent(`${release.artist} ${release.title}`)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-3 inline-flex w-fit items-center gap-2 rounded-full bg-spotify px-4 py-1.5 text-sm font-semibold text-black hover:brightness-110"
+            >
+              <svg viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor" aria-hidden>
+                <path d="M12 0a12 12 0 1 0 0 24 12 12 0 0 0 0-24Zm5.5 17.3a.75.75 0 0 1-1 .25c-2.9-1.77-6.5-2.17-10.8-1.19a.75.75 0 1 1-.33-1.46c4.67-1.07 8.68-.61 11.88 1.35.36.22.47.69.25 1.05Zm1.47-3.27a.94.94 0 0 1-1.29.31c-3.3-2.03-8.35-2.62-12.26-1.43a.94.94 0 1 1-.55-1.8c4.47-1.36 10.02-.7 13.79 1.62.44.27.58.85.31 1.3Zm.13-3.4C15.14 8.28 8.6 8.07 4.8 9.22a1.13 1.13 0 1 1-.65-2.16c4.36-1.32 11.6-1.07 16.17 1.64a1.13 1.13 0 0 1-1.16 1.94Z" />
+              </svg>
+              Слушать в Spotify
+            </a>
           </div>
         </section>
 
@@ -131,12 +142,12 @@ export default async function ReleasePage({ params }: PageProps<"/release/[mbid]
                 const count = favMap.get(t.id) ?? 0;
                 return (
                   <li key={t.id} className="flex items-center gap-3 px-4 py-2 text-sm">
-                    <span className="w-8 text-right tabular-nums text-zinc-500">
+                    <span className="w-8 text-right tabular-nums text-muted">
                       {multiDisc ? `${t.disc}.${t.position}` : t.position}
                     </span>
                     <span className="flex-1">{t.title}</span>
-                    {count > 0 && <span className="text-xs text-fuchsia-300">♥ {count}</span>}
-                    <span className="w-12 text-right tabular-nums text-zinc-500">{formatLength(t.length_ms)}</span>
+                    {count > 0 && <span className="text-xs text-vibe">♥ {count}</span>}
+                    <span className="w-12 text-right tabular-nums text-muted">{formatLength(t.length_ms)}</span>
                     {viewer && (
                       <form action={toggleFavouriteTrack}>
                         <input type="hidden" name="track_id" value={t.id} />
@@ -146,7 +157,7 @@ export default async function ReleasePage({ params }: PageProps<"/release/[mbid]
                         <button
                           title={isFav ? "Убрать из любимых" : "Любимый трек"}
                           aria-label={isFav ? `Убрать «${t.title}» из любимых` : `Отметить «${t.title}» любимым`}
-                          className={`text-lg leading-none ${isFav ? "text-fuchsia-400" : "text-zinc-600 hover:text-fuchsia-300"}`}
+                          className={`text-lg leading-none ${isFav ? "text-vibe" : "text-zinc-600 hover:text-vibe"}`}
                         >
                           {isFav ? "♥" : "♡"}
                         </button>
@@ -157,7 +168,7 @@ export default async function ReleasePage({ params }: PageProps<"/release/[mbid]
               })}
             </ol>
           ) : (
-            <p className="text-sm text-zinc-500">В MusicBrainz нет треклиста для этого релиза.</p>
+            <p className="text-sm text-muted">В MusicBrainz нет треклиста для этого релиза.</p>
           )}
         </section>
 
@@ -170,7 +181,7 @@ export default async function ReleasePage({ params }: PageProps<"/release/[mbid]
               ))}
             </div>
           ) : (
-            <p className="text-sm text-zinc-500">Оценок пока нет.</p>
+            <p className="text-sm text-muted">Оценок пока нет.</p>
           )}
         </section>
       </div>
@@ -182,40 +193,40 @@ export default async function ReleasePage({ params }: PageProps<"/release/[mbid]
             <div className="flex flex-wrap gap-2 text-sm">
               <form action={toggleListened}>
                 <HiddenFields values={{ ...hidden, listened: mine.listened ? "1" : "0" }} />
-                <button className="rounded-lg border border-line px-3 py-1.5 hover:border-violet-500">
+                <button className="rounded-lg border border-line px-3 py-1.5 hover:border-accent">
                   {mine.listened ? "✓ Прослушано" : "Отметить прослушанным"}
                 </button>
               </form>
               {mine.inTop ? (
-                <Link href="/settings/top" className="rounded-lg border border-violet-700 px-3 py-1.5 text-violet-300">
+                <Link href="/settings/top" className="rounded-lg border border-accent/60 px-3 py-1.5 text-accent">
                   ★ В моём топ-10
                 </Link>
               ) : mine.topCount < 10 ? (
                 <form action={addToTop}>
                   <HiddenFields values={hidden} />
-                  <button className="rounded-lg border border-line px-3 py-1.5 hover:border-violet-500">
+                  <button className="rounded-lg border border-line px-3 py-1.5 hover:border-accent">
                     ☆ Добавить в топ-10
                   </button>
                 </form>
               ) : (
-                <Link href="/settings/top" className="rounded-lg border border-line px-3 py-1.5 text-zinc-400">
+                <Link href="/settings/top" className="rounded-lg border border-line px-3 py-1.5 text-muted">
                   Топ-10 заполнен — изменить
                 </Link>
               )}
               {mine.rating && (
                 <form action={deleteRating}>
                   <HiddenFields values={hidden} />
-                  <button className="rounded-lg px-3 py-1.5 text-zinc-500 hover:text-red-400">Удалить оценку</button>
+                  <button className="rounded-lg px-3 py-1.5 text-muted hover:text-red-400">Удалить оценку</button>
                 </form>
               )}
             </div>
             {mine.listened && !mine.rating && (
-              <p className="text-xs text-zinc-500">Снятие отметки «Прослушано» также удаляет оценку.</p>
+              <p className="text-xs text-muted">Снятие отметки «Прослушано» также удаляет оценку.</p>
             )}
           </>
         ) : (
           <div className="rounded-2xl border border-line bg-panel p-5 text-sm text-zinc-300">
-            <Link href="/login" className="text-violet-300 hover:underline">
+            <Link href="/login" className="text-accent hover:underline">
               Войдите
             </Link>
             , чтобы оценить релиз, написать рецензию и отметить любимые треки.
