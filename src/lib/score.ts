@@ -32,9 +32,7 @@ export function computeScore(s: Scores): number {
 
 /** Tailwind text colour for a 0..90 score. */
 export function scoreColor(score: number): string {
-  if (score >= 75) return "text-gold";
   if (score >= 60) return "text-accent";
-  if (score >= 45) return "text-vibe";
-  if (score >= 30) return "text-zinc-200";
+  if (score >= 40) return "text-ink";
   return "text-muted";
 }

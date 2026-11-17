@@ -1,33 +1,35 @@
-import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { SESSION_COOKIE, verifySessionToken } from "@/lib/session";
+
+const PUBLIC_PATHS = new Set(["/login"]);
 
 export async function proxy(request: NextRequest) {
-  let response = NextResponse.next({ request });
+  const { pathname, search } = request.nextUrl;
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll();
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
-          response = NextResponse.next({ request });
-          cookiesToSet.forEach(({ name, value, options }) =>
-            response.cookies.set(name, value, options),
-          );
-        },
-      },
-    },
-  );
+  // Vercel Cron calls this route with its own bearer secret.
+  if (pathname.startsWith("/api/cron")) return NextResponse.next();
 
-  // Refreshes an expired session token and writes the new cookies.
-  await supabase.auth.getUser();
-  return response;
+  const session = await verifySessionToken(request.cookies.get(SESSION_COOKIE)?.value);
+  const isPublic = PUBLIC_PATHS.has(pathname);
+
+  if (!session && !isPublic) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/login";
+    url.search = "";
+    if (pathname !== "/") url.searchParams.set("next", pathname + search);
+    return NextResponse.redirect(url);
+  }
+
+  if (session && isPublic) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/";
+    url.search = "";
+    return NextResponse.redirect(url);
+  }
+
+  return NextResponse.next();
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)"],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)"],
 };

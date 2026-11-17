@@ -1,8 +1,20 @@
 # Tuneboxd
 
-Letterboxd для музыки: оценки релизов по 90-балльной шкале, рецензии, любимые треки, топ-10 всех времён, подписки и лента.
+Личный музыкальный дневник в духе Apple Music: оценки релизов по 90-балльной шкале, рецензии,
+любимые треки, топ-10 всех времён и импорт прослушиваний из Last.fm.
 
-## Шкала оценок
+## Возможности
+
+- **Обзор** — последняя оценка, статистика дневника, очередь «ждут оценки», лучшее и последние оценки.
+- **Рейтинг** — все когда-либо оценённые релизы с поиском, сортировкой и фильтрами по типу.
+- **Поиск** — каталог MusicBrainz, обложки из Cover Art Archive.
+- **Страница релиза** — треклист, отметка прослушивания, любимые треки, рецензия, Spotify.
+- **Топ-10** — упорядоченный список главных релизов.
+- **Last.fm** — импорт альбомов из скробблов за сутки/неделю/месяц и очередь на оценку.
+- **Тёмная/светлая тема**, системный шрифт San Francisco на Apple-устройствах.
+- **Один владелец**: вход по логину и паролю, без сторонних OAuth-сервисов.
+
+## Шкала
 
 Пять критериев от 1 до 10:
 
@@ -12,35 +24,92 @@ Letterboxd для музыки: оценки релизов по 90-балльн
 4. Индивидуальность / харизма
 5. Атмосфера / вайб
 
-**Итог = (К1 + К2 + К3 + К4) × 1,4 × множитель вайба**, где множитель растёт линейно от ×1,0000 (вайб 1) до ×1,6072 (вайб 10). Максимум 90, итог округляется до целого. Формула продублирована в `src/lib/score.ts` (покрыта тестами) и в генерируемой колонке `ratings.score` в миграции.
+**Итог = (К1 + К2 + К3 + К4) × 1,4 × множитель вайба**, где множитель растёт линейно от ×1,0000
+(вайб 1) до ×1,6072 (вайб 10). Максимум 90, итог округляется до целого. Формула продублирована в
+`src/lib/score.ts` (покрыта тестами) и в генерируемой колонке `ratings.score` в миграции.
 
 ## Стек
 
-- Next.js 16 (App Router, Server Actions), Tailwind CSS 4
-- Supabase: Postgres с RLS, авторизация (email, Google, Spotify)
-- Каталог релизов из [MusicBrainz](https://musicbrainz.org), обложки из Cover Art Archive. Релиз сохраняется в базу при первом открытии его страницы.
+- Next.js 16 (App Router, Server Actions), React 19, Tailwind CSS 4
+- Neon Postgres (бесплатный тариф, без Docker и Supabase)
+- MusicBrainz + Cover Art Archive, Last.fm API
+- Vitest
 
 ## Локальный запуск
 
-Нужны Node 20+, pnpm и Docker.
+Нужны Node 20+ и pnpm.
 
-```bash
-pnpm install
-pnpm supabase start            # поднимет Postgres/Auth и применит миграции
-cp .env.example .env.local     # вставьте ключи из вывода `pnpm supabase status`
-pnpm dev
+1. Создайте бесплатный проект в [Neon](https://neon.tech) и скопируйте **pooled** connection
+   string.
+2. Установите зависимости и настройте окружение:
+
+   ```bash
+   pnpm install
+   cp .env.example .env.local
+   ```
+
+   В `.env.local` заполните `DATABASE_URL`, `AUTH_SECRET` и пароль:
+
+   ```bash
+   pnpm hash-password
+   ```
+
+   Команда напечатает строку `APP_PASSWORD_HASH=scrypt:...` — вставьте её в `.env.local`.
+   `APP_USERNAME` по умолчанию `owner`.
+
+   `AUTH_SECRET` — любая случайная строка. На macOS/Linux: `openssl rand -hex 32`.
+   На Windows без OpenSSL:
+
+   ```powershell
+   -join ((1..32) | ForEach-Object { "{0:x2}" -f (Get-Random -Maximum 256) })
+   ```
+
+3. Примените миграции и запустите:
+
+   ```bash
+   pnpm db:migrate
+   pnpm dev
+   ```
+
+4. Откройте `http://localhost:3000`, войдите логином и паролем.
+
+Тесты: `pnpm test`. Проверка: `pnpm lint && pnpm build`. Схему БД можно проверить без
+Neon — `pnpm db:check` применяет миграцию к встроенному Postgres (PGlite) и сверяет формулу
+оценки со `src/lib/score.ts` на всех 100 000 комбинациях.
+
+## Бесплатный деплой
+
+Рекомендуемая связка — **Vercel Hobby + Neon Free**, обе бесплатны.
+
+1. Запушьте репозиторий на GitHub.
+2. Импортируйте его в [Vercel](https://vercel.com/new).
+3. Добавьте переменные окружения из `.env.example`:
+   - `DATABASE_URL`
+   - `APP_USERNAME`
+   - `APP_PASSWORD_HASH` (или `APP_PASSWORD`)
+   - `AUTH_SECRET`
+   - `CRON_SECRET` — если нужна ежедневная синхронизация Last.fm.
+4. Задеплойте. Миграции применяются локально командой `pnpm db:migrate` (Vercel их не запускает).
+
+Neon на бесплатном тарифе засыпает после простоя и просыпается автоматически за доли секунды,
+поэтому дневник остаётся доступным без ручного вмешательства.
+
+### Last.fm
+
+1. Создайте API-ключ на [last.fm/api/account/create](https://www.last.fm/api/account/create).
+2. В приложении откройте **Last.fm** и сохраните username и ключ.
+3. Нажмите «Синхронизировать» — новые альбомы появятся в очереди «Ждут оценки».
+
+Для ежедневного импорта на Vercel задайте `CRON_SECRET`; расписание уже в `vercel.json`
+(22:00 UTC). Vercel отправляет секрет в заголовке `Authorization`.
+
+## Структура
+
 ```
-
-Тесты: `pnpm test`. Проверка: `pnpm lint && pnpm build`.
-
-## Вход через Google и Spotify
-
-1. Создайте OAuth-приложения в [Google Cloud Console](https://console.cloud.google.com/apis/credentials) и [Spotify Developer Dashboard](https://developer.spotify.com/dashboard).
-2. Redirect URI в обоих: `https://<project>.supabase.co/auth/v1/callback` (локально `http://127.0.0.1:54321/auth/v1/callback`).
-3. В продакшене включите провайдеров в Supabase Dashboard → Authentication → Providers. Локально поставьте `enabled = true` в `supabase/config.toml` и задайте переменные `SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID`, `SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET`, `SUPABASE_AUTH_EXTERNAL_SPOTIFY_CLIENT_ID`, `SUPABASE_AUTH_EXTERNAL_SPOTIFY_SECRET`.
-4. Добавьте `https://<ваш-домен>/auth/callback` в Supabase → Authentication → URL Configuration → Redirect URLs.
-
-## Деплой
-
-1. Создайте проект в Supabase и примените миграции: `pnpm supabase link --project-ref <ref> && pnpm supabase db push`.
-2. Импортируйте репозиторий в Vercel и задайте переменные из `.env.example` (`SUPABASE_SECRET_KEY` — только на сервере).
+db/migrations/        SQL-схема Neon
+scripts/              миграции и генерация хеша пароля
+src/app/(app)/        страницы дневника
+src/app/(auth)/login  вход
+src/lib/              БД, auth, MusicBrainz, Last.fm, запросы
+src/components/       интерфейс
+```

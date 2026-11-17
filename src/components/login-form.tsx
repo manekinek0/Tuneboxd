@@ -1,74 +1,65 @@
 "use client";
 
-import { useActionState, useState } from "react";
-import { signInWithOAuth, signInWithPassword, signUp, type ActionState } from "@/app/actions";
+import { useActionState } from "react";
+import { signIn } from "@/lib/actions/auth";
+import type { ActionState } from "@/lib/action-state";
 
 export function LoginForm({
-  oauthError,
-  providers,
+  next,
+  username,
+  configured,
 }: {
-  oauthError: boolean;
-  providers: { google: boolean; spotify: boolean };
+  next: string;
+  username: string;
+  configured: boolean;
 }) {
-  const [mode, setMode] = useState<"in" | "up">("in");
-  const [inState, inAction, inPending] = useActionState<ActionState, FormData>(signInWithPassword, undefined);
-  const [upState, upAction, upPending] = useActionState<ActionState, FormData>(signUp, undefined);
-  const state = mode === "in" ? inState : upState;
-  const pending = mode === "in" ? inPending : upPending;
-  const field = "w-full rounded-lg border border-line bg-black/30 px-3 py-2 outline-none focus:border-accent";
+  const [state, action, pending] = useActionState<ActionState, FormData>(signIn, undefined);
 
   return (
-    <div className="mx-auto max-w-sm space-y-6 rounded-2xl border border-line bg-panel p-6">
-      <h1 className="text-2xl font-extrabold">{mode === "in" ? "Вход" : "Регистрация"}</h1>
+    <div className="rounded-2xl border border-line bg-surface p-6 shadow-[var(--shadow-card)]">
+      <h2 className="text-[19px] font-semibold">Вход</h2>
+      <p className="mt-1 text-[13px] text-muted">Только для владельца дневника.</p>
 
-      {(providers.google || providers.spotify) && (
-        <>
-          <form action={signInWithOAuth} className="space-y-2">
-            {providers.google && (
-              <button name="provider" value="google" className="w-full rounded-full border border-line py-2 text-sm hover:border-accent">
-                Продолжить с Google
-              </button>
-            )}
-            {providers.spotify && (
-              <button name="provider" value="spotify" className="w-full rounded-full border border-line py-2 text-sm hover:border-spotify">
-                Продолжить со Spotify
-              </button>
-            )}
-            {oauthError && <p className="text-sm text-red-400">Не удалось войти, попробуйте ещё раз.</p>}
-          </form>
-
-          <div className="flex items-center gap-3 text-xs text-muted">
-            <div className="h-px flex-1 bg-line" />
-            или по email
-            <div className="h-px flex-1 bg-line" />
-          </div>
-        </>
-      )}
-
-      {upState?.ok && mode === "up" ? (
-        <p className="text-sm text-success">Мы отправили письмо со ссылкой для подтверждения.</p>
+      {!configured ? (
+        <div className="mt-4 rounded-xl bg-accent-soft px-3 py-2.5 text-[12px] leading-relaxed">
+          Пароль не настроен. Добавьте <code className="rounded bg-fill px-1">APP_PASSWORD</code> или{" "}
+          <code className="rounded bg-fill px-1">APP_PASSWORD_HASH</code> в переменные окружения.
+        </div>
       ) : (
-        <form action={mode === "in" ? inAction : upAction} className="space-y-3">
-          <input name="email" type="email" required placeholder="Email" autoComplete="email" className={field} />
-          <input
-            name="password"
-            type="password"
-            required
-            minLength={mode === "up" ? 8 : undefined}
-            placeholder="Пароль"
-            autoComplete={mode === "in" ? "current-password" : "new-password"}
-            className={field}
-          />
-          {state?.error && <p className="text-sm text-red-400">{state.error}</p>}
-          <button disabled={pending} className="w-full rounded-full bg-accent py-2 font-semibold text-black hover:bg-accent-hover disabled:opacity-60">
-            {mode === "in" ? "Войти" : "Создать аккаунт"}
+        <form action={action} className="mt-5 space-y-3">
+          <input type="hidden" name="next" value={next} />
+          <label className="block">
+            <span className="text-[12px] font-medium text-muted">Имя пользователя</span>
+            <input
+              name="username"
+              defaultValue={username}
+              required
+              autoComplete="username"
+              autoCapitalize="none"
+              spellCheck={false}
+              className="mt-1 w-full rounded-xl border border-line bg-bg px-3 py-2.5 text-[15px] outline-none focus:border-accent"
+            />
+          </label>
+          <label className="block">
+            <span className="text-[12px] font-medium text-muted">Пароль</span>
+            <input
+              name="password"
+              type="password"
+              required
+              autoFocus
+              autoComplete="current-password"
+              className="mt-1 w-full rounded-xl border border-line bg-bg px-3 py-2.5 text-[15px] outline-none focus:border-accent"
+            />
+          </label>
+          {state?.error && <p className="text-[13px] text-accent">{state.error}</p>}
+          <button
+            disabled={pending}
+            className="mt-1 w-full rounded-full bg-accent py-2.5 text-[15px] font-semibold text-white transition-colors hover:bg-accent-hover disabled:opacity-50"
+          >
+            {pending ? "Вхожу…" : "Войти"}
           </button>
         </form>
       )}
-
-      <button onClick={() => setMode(mode === "in" ? "up" : "in")} className="text-sm text-accent hover:underline">
-        {mode === "in" ? "Нет аккаунта? Зарегистрироваться" : "Уже есть аккаунт? Войти"}
-      </button>
     </div>
   );
 }

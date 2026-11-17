@@ -1,52 +1,35 @@
 import Link from "next/link";
-import { Avatar, Score } from "./release";
+import { formatDate } from "@/lib/format";
+import type { RatingWithRelease } from "@/lib/types";
 import { Cover } from "./cover";
+import { Score } from "./release";
 
-export type RatingWithJoins = {
-  score: number;
-  review: string | null;
-  updated_at: string;
-  profiles: { username: string; display_name: string | null; avatar_url: string | null } | null;
-  releases: { mbid: string; title: string; artist: string } | null;
-};
-
-export const RATING_SELECT =
-  "score, review, updated_at, profiles(username, display_name, avatar_url), releases(mbid, title, artist)";
-
-const dateFmt = new Intl.DateTimeFormat("ru-RU", { day: "numeric", month: "long", year: "numeric" });
-
-export function RatingCard({ rating, showRelease = true }: { rating: RatingWithJoins; showRelease?: boolean }) {
-  const user = rating.profiles;
-  const release = rating.releases;
-  if (!user || !release) return null;
+export function RatingCard({ rating, showCover = true }: { rating: RatingWithRelease; showCover?: boolean }) {
   return (
-    <article className="flex gap-4 rounded-xl border border-line bg-panel p-4">
-      {showRelease && (
-        <Link href={`/release/${release.mbid}`}>
-          <Cover mbid={release.mbid} title={release.title} size="sm" />
+    <article className="flex gap-4 rounded-2xl border border-line bg-surface p-4 transition-shadow hover:shadow-[var(--shadow-card)]">
+      {showCover && (
+        <Link href={`/release/${rating.mbid}`} className="shrink-0">
+          <Cover mbid={rating.mbid} title={rating.title} size="sm" />
         </Link>
       )}
       <div className="min-w-0 flex-1">
-        <div className="flex flex-wrap items-center gap-x-2 text-sm">
-          <Link href={`/u/${user.username}`} className="flex items-center gap-2 font-medium hover:text-accent">
-            <Avatar name={user.display_name || user.username} url={user.avatar_url} />
-            {user.display_name || user.username}
-          </Link>
-          {showRelease && (
-            <>
-              <span className="text-muted">оценил(а)</span>
-              <Link href={`/release/${release.mbid}`} className="font-medium hover:text-accent">
-                {release.artist} — {release.title}
-              </Link>
-            </>
-          )}
-          <span className="text-xs text-muted">{dateFmt.format(new Date(rating.updated_at))}</span>
-        </div>
+        <Link href={`/release/${rating.mbid}`} className="group block">
+          <div className="truncate text-[15px] font-medium leading-tight group-hover:text-accent">
+            {rating.title}
+          </div>
+          <div className="truncate text-[13px] text-muted">{rating.artist}</div>
+        </Link>
         {rating.review && (
-          <p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-zinc-300">{rating.review}</p>
+          <p className="mt-2 line-clamp-3 whitespace-pre-line text-[13px] leading-relaxed text-muted">
+            {rating.review}
+          </p>
         )}
+        <div className="mt-1.5 text-[11px] text-muted">{formatDate(rating.updated_at)}</div>
       </div>
-      <Score value={rating.score} className="text-2xl" />
+      <div className="shrink-0 text-right">
+        <Score value={rating.score} className="text-[26px] leading-none" />
+        <div className="mt-1 text-[10px] uppercase tracking-wide text-muted">из 90</div>
+      </div>
     </article>
   );
 }

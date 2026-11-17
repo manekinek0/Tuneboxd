@@ -1,21 +1,38 @@
 import Link from "next/link";
 import { scoreColor } from "@/lib/score";
+import type { ReleaseRow } from "@/lib/types";
+import { yearOf } from "@/lib/format";
 import { Cover } from "./cover";
 
-export type ReleaseRow = {
-  id: string;
-  mbid: string;
-  title: string;
-  artist: string;
-  release_date: string | null;
-};
-
-export function Score({ value, className = "" }: { value: number | null; className?: string }) {
+export function Score({ value, className = "" }: { value: number | null | undefined; className?: string }) {
   if (value == null) return <span className={`text-muted ${className}`}>—</span>;
-  return <span className={`font-extrabold tabular-nums ${scoreColor(Number(value))} ${className}`}>{Math.round(Number(value))}</span>;
+  return (
+    <span className={`font-semibold tabular-nums ${scoreColor(Number(value))} ${className}`}>
+      {Math.round(Number(value))}
+    </span>
+  );
 }
 
-export const MEDALS: Record<number, string> = { 1: "🥇", 2: "🥈", 3: "🥉" };
+export function ScoreBadge({ value }: { value: number | null | undefined }) {
+  if (value == null) return null;
+  return (
+    <span className="rounded-md bg-black/65 px-1.5 py-0.5 text-[13px] font-semibold tabular-nums text-white backdrop-blur-sm">
+      {Math.round(Number(value))}
+    </span>
+  );
+}
+
+export function Rank({ value }: { value: number }) {
+  return (
+    <span
+      className={`inline-block w-7 text-center text-[15px] font-semibold tabular-nums ${
+        value <= 3 ? "text-accent" : "text-muted"
+      }`}
+    >
+      {value}
+    </span>
+  );
+}
 
 export function ReleaseTile({
   release,
@@ -27,47 +44,27 @@ export function ReleaseTile({
   rank?: number;
 }) {
   return (
-    <Link href={`/release/${release.mbid}`} className="group block">
-      <div className="relative">
+    <Link href={`/release/${release.mbid}`} className="group block min-w-0">
+      <div className="relative transition-transform duration-200 group-hover:-translate-y-0.5">
         <Cover mbid={release.mbid} title={release.title} size="fill" />
-        {rank != null &&
-          (MEDALS[rank] ? (
-            <span
-              className="emoji absolute -left-2 -top-3 text-4xl drop-shadow-[0_2px_4px_rgb(0_0_0/0.6)]"
-              role="img"
-              aria-label={`${rank} место`}
-            >
-              {MEDALS[rank]}
-            </span>
-          ) : (
-            <span className="absolute left-1.5 top-1.5 rounded-md bg-black/70 px-1.5 text-xs font-bold text-white">
-              #{rank}
-            </span>
-          ))}
+        {rank != null && (
+          <span className="absolute left-2 top-2 flex h-6 min-w-6 items-center justify-center rounded-md bg-black/55 px-1.5 text-[12px] font-semibold tabular-nums text-white backdrop-blur-sm">
+            {rank}
+          </span>
+        )}
         {score != null && (
-          <span className="absolute bottom-1.5 right-1.5 rounded bg-black/75 px-1.5 text-sm">
-            <Score value={score} />
+          <span className="absolute bottom-2 right-2">
+            <ScoreBadge value={score} />
           </span>
         )}
       </div>
-      <div className="mt-1.5 truncate text-sm font-medium group-hover:text-accent">{release.title}</div>
-      <div className="truncate text-xs text-muted">
+      <div className="mt-2 truncate text-[13px] font-medium leading-tight group-hover:text-accent">
+        {release.title}
+      </div>
+      <div className="truncate text-[12px] text-muted">
         {release.artist}
-        {release.release_date && ` · ${release.release_date.slice(0, 4)}`}
+        {release.release_date && ` · ${yearOf(release.release_date)}`}
       </div>
     </Link>
-  );
-}
-
-export function Avatar({ name, url, size = 8 }: { name: string; url?: string | null; size?: 8 | 20 }) {
-  const cls = size === 20 ? "h-20 w-20 text-3xl" : "h-8 w-8 text-sm";
-  if (url) {
-    // eslint-disable-next-line @next/next/no-img-element -- OAuth avatar hosts vary
-    return <img src={url} alt="" className={`${cls} rounded-full object-cover`} />;
-  }
-  return (
-    <div className={`${cls} flex items-center justify-center rounded-full bg-gradient-to-br from-vibe to-accent font-bold text-white`}>
-      {name.slice(0, 1).toUpperCase()}
-    </div>
   );
 }

@@ -1,10 +1,10 @@
 import "server-only";
 import { cache } from "react";
-import { createAdminClient } from "@/lib/supabase/server";
+import { getSql } from "./db";
 
 const API = "https://musicbrainz.org/ws/2";
 // MusicBrainz requires an identifying User-Agent.
-const USER_AGENT = "Tuneboxd/0.1 ( https://github.com/manekinek0/Tuneboxd )";
+const USER_AGENT = "Tuneboxd/0.2 ( https://github.com/manekinek0/Tuneboxd )";
 
 type ArtistCredit = { name: string; joinphrase?: string }[];
 
@@ -58,8 +58,9 @@ async function mb<T>(path: string, revalidate = 3600): Promise<T> {
     const res = await fetch(`${API}${path}`, {
       headers: { "User-Agent": USER_AGENT, Accept: "application/json" },
       next: { revalidate },
+      signal: AbortSignal.timeout(8000),
     });
-    // 503 means the 1 request/second rate limit was hit.
+    // 503 usually means the 1 request/second rate limit was hit.
     if (res.status === 503 && attempt < 2) {
       await new Promise((r) => setTimeout(r, 1100));
       continue;
@@ -73,7 +74,39 @@ export async function searchReleaseGroups(query: string): Promise<ReleaseGroupSu
   const data = await mb<{ "release-groups": MbReleaseGroup[] }>(
     `/release-group?query=${encodeURIComponent(query)}&limit=24&fmt=json`,
   );
-  return data["release-groups"].map(summarize);
+  return (data["release-groups"] ?? []).map(summarize);
+}
+
+function escapeLucene(value: string) {
+  return value.replace(/([+\-&|!(){}[\]^"~*?:\\/])/g, "\\$1");
+}
+
+/** Best-effort match for a Last.fm album that has no MusicBrainz id. */
+export async function searchBestReleaseGroup(artist: string, album: string): Promise<string | null> {
+  const query = `release:${escapeLucene(album)} AND artist:${escapeLucene(artist)}`;
+  try {
+    const data = await mb<{ "release-groups": MbReleaseGroup[] }>(
+      `/release-group?query=${encodeURIComponent(query)}&limit=5&fmt=json`,
+    );
+    const groups = data["release-groups"] ?? [];
+    const normalizedAlbum = album.trim().toLowerCase();
+    const exact = groups.find((g) => g.title.trim().toLowerCase() === normalizedAlbum);
+    return (exact ?? groups[0])?.id ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/** Last.fm album ids are release ids, while the app stores release groups. */
+export async function releaseGroupFromRelease(releaseMbid: string): Promise<string | null> {
+  try {
+    const data = await mb<{ "release-group"?: { id: string } }>(
+      `/release/${releaseMbid}?inc=release-groups&fmt=json`,
+    );
+    return data["release-group"]?.id ?? null;
+  } catch {
+    return null;
+  }
 }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -84,10 +117,12 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
  */
 export const ensureRelease = cache(async (mbid: string): Promise<string | null> => {
   if (!UUID.test(mbid)) return null;
-  const admin = createAdminClient();
+  const sql = getSql();
 
-  const existing = await admin.from("releases").select("id").eq("mbid", mbid).maybeSingle();
-  if (existing.data) return existing.data.id;
+  const existing = (await sql`
+    select id from public.releases where mbid = ${mbid}
+  `) as { id: string }[];
+  if (existing[0]) return existing[0].id;
 
   let rg: MbReleaseGroup;
   try {
@@ -104,64 +139,51 @@ export const ensureRelease = cache(async (mbid: string): Promise<string | null> 
 
   let tracks: { disc: number; position: number; title: string; length_ms: number | null }[] = [];
   if (candidates[0]) {
-    const release = await mb<MbRelease>(`/release/${candidates[0].id}?inc=recordings&fmt=json`, 86400);
-    tracks = (release.media ?? []).flatMap((m) =>
-      (m.tracks ?? []).map((t) => ({
-        disc: m.position,
-        position: t.position,
-        title: t.title,
-        length_ms: t.length ?? null,
-      })),
-    );
+    try {
+      const release = await mb<MbRelease>(`/release/${candidates[0].id}?inc=recordings&fmt=json`, 86400);
+      tracks = (release.media ?? []).flatMap((m) =>
+        (m.tracks ?? []).map((t) => ({
+          disc: m.position,
+          position: t.position,
+          title: t.title,
+          length_ms: t.length ?? null,
+        })),
+      );
+    } catch {
+      tracks = [];
+    }
   }
 
-  const { data: inserted, error } = await admin
-    .from("releases")
-    .upsert(
-      {
-        mbid,
-        title: summary.title,
-        artist: summary.artist,
-        primary_type: summary.primaryType,
-        secondary_types: summary.secondaryTypes,
-        release_date: summary.releaseDate,
-      },
-      { onConflict: "mbid", ignoreDuplicates: true },
+  const inserted = (await sql`
+    insert into public.releases (mbid, title, artist, primary_type, secondary_types, release_date)
+    values (
+      ${mbid},
+      ${summary.title},
+      ${summary.artist},
+      ${summary.primaryType},
+      ${JSON.stringify(summary.secondaryTypes)}::jsonb,
+      ${summary.releaseDate}
     )
-    .select("id")
-    .maybeSingle();
-  if (error) throw error;
+    on conflict (mbid) do nothing
+    returning id
+  `) as { id: string }[];
 
   // A concurrent request imported it first.
-  if (!inserted) {
-    const again = await admin.from("releases").select("id").eq("mbid", mbid).single();
-    return again.data?.id ?? null;
+  if (!inserted[0]) {
+    const again = (await sql`
+      select id from public.releases where mbid = ${mbid}
+    `) as { id: string }[];
+    return again[0]?.id ?? null;
   }
 
+  const id = inserted[0].id;
   if (tracks.length) {
-    const { error: tracksError } = await admin
-      .from("tracks")
-      .insert(tracks.map((t) => ({ ...t, release_id: inserted.id })));
-    if (tracksError) throw tracksError;
+    await sql`
+      insert into public.tracks (release_id, disc, position, title, length_ms)
+      select ${id}, (t->>'disc')::smallint, (t->>'position')::smallint, t->>'title',
+             nullif(t->>'length_ms', '')::int
+      from jsonb_array_elements(${JSON.stringify(tracks)}::jsonb) t
+    `;
   }
-  return inserted.id;
+  return id;
 });
-
-const TYPE_LABELS: Record<string, string> = {
-  Album: "Альбом",
-  EP: "EP",
-  Single: "Сингл",
-  Broadcast: "Эфир",
-  Other: "Другое",
-  Mixtape: "Микстейп",
-  "Mixtape/Street": "Микстейп",
-  Compilation: "Сборник",
-  Live: "Концерт",
-  Soundtrack: "Саундтрек",
-  Remix: "Ремиксы",
-};
-
-export function typeLabel(primary: string | null, secondary: string[] = []) {
-  const parts = [primary, ...secondary].filter(Boolean) as string[];
-  return parts.map((p) => TYPE_LABELS[p] ?? p).join(" · ") || "Релиз";
-}
