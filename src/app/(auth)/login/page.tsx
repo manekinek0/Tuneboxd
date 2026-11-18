@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { LoginForm } from "@/components/login-form";
-import { MusicNoteIcon } from "@/components/icons";
+import { Logo } from "@/components/logo";
 import { ThemeButton } from "@/components/theme-toggle";
 import { authIsConfigured, configuredUsername, getSession } from "@/lib/auth";
 
@@ -29,9 +29,7 @@ export default async function LoginPage({
 
       <div className="rise relative w-full max-w-sm">
         <div className="mb-6 flex flex-col items-center text-center">
-          <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-accent text-white shadow-[0_10px_30px_rgba(250,45,72,0.35)]">
-            <MusicNoteIcon className="h-7 w-7" />
-          </span>
+          <Logo className="h-14 w-14 shadow-[0_10px_30px_rgba(250,45,72,0.35)]" />
           <h1 className="mt-4 text-[28px] font-semibold tracking-tight">Tuneboxd</h1>
           <p className="mt-1 text-[13px] text-muted">Личный музыкальный дневник</p>
         </div>

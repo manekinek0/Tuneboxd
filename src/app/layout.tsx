@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
+import "@fontsource-variable/inter";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -23,7 +24,7 @@ const themeScript = `(function(){try{var t=localStorage.getItem("tuneboxd-theme"
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="ru" className="antialiased" suppressHydrationWarning>
+    <html lang="ru" data-scroll-behavior="smooth" className="antialiased" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>

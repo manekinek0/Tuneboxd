@@ -9,10 +9,11 @@ import {
   HomeIcon,
   LastfmIcon,
   LogoutIcon,
-  MusicNoteIcon,
   SearchIcon,
   StarIcon,
 } from "./icons";
+import { LinkPending } from "./link-pending";
+import { Logo } from "./logo";
 import { ThemeButton } from "./theme-toggle";
 
 type Item = { href: string; label: string; icon: typeof HomeIcon };
@@ -40,13 +41,13 @@ export function AppNav({ username }: { username: string }) {
 
   return (
     <>
+      <span className="tb-top-progress" aria-hidden />
+
       {/* macOS-style sidebar */}
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-[260px] flex-col border-r border-line bg-sidebar backdrop-blur-2xl lg:flex">
         <div className="px-5 pb-5 pt-7">
           <Link href="/" className="flex items-center gap-2.5">
-            <span className="flex h-8 w-8 items-center justify-center rounded-[9px] bg-accent text-white shadow-sm">
-              <MusicNoteIcon className="h-[18px] w-[18px]" />
-            </span>
+            <Logo className="h-8 w-8 shadow-sm" />
             <span className="text-[17px] font-semibold tracking-tight">Tuneboxd</span>
           </Link>
         </div>
@@ -69,7 +70,8 @@ export function AppNav({ username }: { username: string }) {
                   }`}
                 >
                   <item.icon className={`h-[19px] w-[19px] ${isActive ? "text-accent" : "text-muted"}`} />
-                  {item.label}
+                  <span className="min-w-0 flex-1 truncate">{item.label}</span>
+                  <LinkPending />
                 </Link>
               );
             })}
@@ -94,7 +96,8 @@ export function AppNav({ username }: { username: string }) {
                   }`}
                 >
                   <item.icon className={`h-[19px] w-[19px] ${isActive ? "text-accent" : "text-muted"}`} />
-                  {item.label}
+                  <span className="min-w-0 flex-1 truncate">{item.label}</span>
+                  <LinkPending />
                 </Link>
               );
             })}
@@ -121,9 +124,7 @@ export function AppNav({ username }: { username: string }) {
       {/* iOS-style mobile header + tab bar */}
       <header className="sticky top-0 z-30 flex items-center justify-between border-b border-line bg-sidebar px-4 py-2.5 backdrop-blur-2xl lg:hidden">
         <Link href="/" className="flex items-center gap-2">
-          <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-accent text-white">
-            <MusicNoteIcon className="h-4 w-4" />
-          </span>
+          <Logo className="h-7 w-7" />
           <span className="text-[16px] font-semibold tracking-tight">Tuneboxd</span>
         </Link>
         <div className="flex items-center gap-1">
@@ -150,7 +151,10 @@ export function AppNav({ username }: { username: string }) {
                   isActive ? "text-accent" : "text-muted"
                 }`}
               >
-                <item.icon className="h-[22px] w-[22px]" />
+                <span className="relative">
+                  <item.icon className="h-[22px] w-[22px]" />
+                  <LinkPending className="absolute -right-1.5 -top-1.5 h-2.5 w-2.5" />
+                </span>
                 {item.label}
               </Link>
             );

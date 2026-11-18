@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { DownloadIcon, LogoutIcon, MusicNoteIcon } from "@/components/icons";
+import { DownloadIcon, LogoutIcon } from "@/components/icons";
+import { Logo } from "@/components/logo";
 import { LastfmSettingsForm } from "@/components/lastfm-settings-form";
 import { ThemeSegmented } from "@/components/theme-toggle";
 import { signOut } from "@/lib/actions/auth";
@@ -76,9 +77,7 @@ export default async function SettingsPage() {
 
       <section className="rounded-2xl border border-line bg-surface p-5">
         <div className="flex items-center gap-2.5">
-          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent text-white">
-            <MusicNoteIcon className="h-[18px] w-[18px]" />
-          </span>
+          <Logo className="h-8 w-8" />
           <div>
             <h2 className="text-[17px] font-semibold">Tuneboxd</h2>
             <p className="text-[11px] text-muted">Версия 0.2 · личный музыкальный дневник</p>
