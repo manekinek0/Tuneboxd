@@ -2,13 +2,14 @@
  * Applies the SQL migration to an in-memory Postgres (PGlite) and checks the
  * invariants the app relies on. Runs without Neon or Docker: `pnpm db:check`.
  */
-import { readFile } from "node:fs/promises";
+import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { PGlite } from "@electric-sql/pglite";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const migration = await readFile(path.join(root, "db", "migrations", "0001_init.sql"), "utf8");
+const migrationsDir = path.join(root, "db", "migrations");
+const migrations = (await readdir(migrationsDir)).filter((name) => name.endsWith(".sql")).sort();
 
 const db = new PGlite();
 let checks = 0;
@@ -42,9 +43,11 @@ async function one(sql, params = []) {
   return rows[0];
 }
 
-console.log("Applying db/migrations/0001_init.sql…");
-await db.exec(migration);
-ok(true, "migration applies cleanly");
+for (const name of migrations) {
+  console.log(`Applying db/migrations/${name}…`);
+  await db.exec(await readFile(path.join(migrationsDir, name), "utf8"));
+}
+ok(true, "migrations apply cleanly");
 
 const release = await one(
   `insert into public.releases (mbid, title, artist, primary_type, secondary_types, release_date)
@@ -58,6 +61,24 @@ const other = await one(
    values ($1, 'Low Album', 'Test Artist', null, '["Live"]'::jsonb, '1999')
    returning id`,
   ["22222222-2222-2222-2222-222222222222"],
+);
+
+// Pitchfork cache --------------------------------------------------------------
+await db.query(
+  `update public.releases
+   set pitchfork_score = 9.3, pitchfork_url = 'https://pitchfork.com/reviews/albums/test/'
+   where id = $1`,
+  [release.id],
+);
+eq(
+  Number((await one(`select pitchfork_score from public.releases where id = $1`, [release.id])).pitchfork_score),
+  9.3,
+  "pitchfork score is stored",
+);
+await rejects(
+  "pitchfork score is limited to 10",
+  `update public.releases set pitchfork_score = 11 where id = $1`,
+  [release.id],
 );
 
 const track = await one(

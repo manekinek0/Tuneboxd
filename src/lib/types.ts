@@ -6,6 +6,8 @@ export type ReleaseRow = {
   primary_type: string | null;
   secondary_types: string[];
   release_date: string | null;
+  pitchfork_score: number | null;
+  pitchfork_url: string | null;
 };
 
 export type TrackRow = {

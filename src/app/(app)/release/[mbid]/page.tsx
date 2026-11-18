@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 import { addToTop, deleteRating, toggleFavouriteTrack, toggleListened } from "@/lib/actions/ratings";
 import { Cover } from "@/components/cover";
 import {
@@ -15,6 +16,7 @@ import {
   StarFilledIcon,
   TrashIcon,
 } from "@/components/icons";
+import { PitchforkCard, PitchforkCardSkeleton } from "@/components/pitchfork-card";
 import { RatingForm } from "@/components/rating-form";
 import { Score } from "@/components/release";
 import { formatDate, formatLength, formatReleaseDate, yearOf } from "@/lib/format";
@@ -163,17 +165,17 @@ export default async function ReleasePage({ params }: { params: Promise<{ mbid: 
 
       <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_390px]">
         <div className="order-2 space-y-8 lg:order-1">
-          <section>
-            <div className="mb-3 flex items-baseline justify-between">
+          <section className="overflow-hidden rounded-2xl border border-line bg-surface">
+            <div className="flex items-baseline justify-between gap-4 border-b border-line px-4 py-4 sm:px-5 lg:px-6 lg:py-5">
               <h2 className="text-[20px] font-semibold tracking-tight">Треклист</h2>
               {tracks.length > 0 && <span className="text-[12px] text-muted">{tracks.length} треков</span>}
             </div>
             {tracks.length ? (
-              <ol className="divide-y divide-line overflow-hidden rounded-2xl border border-line bg-surface">
+              <ol className="divide-y divide-line">
                 {tracks.map((track) => {
                   const isFavourite = favourites.has(track.id);
                   return (
-                    <li key={track.id} className="flex items-center gap-3 px-4 py-2.5 text-[14px]">
+                    <li key={track.id} className="flex items-center gap-3 px-4 py-2.5 text-[14px] sm:px-5">
                       <span className="w-7 shrink-0 text-right text-[12px] tabular-nums text-muted">
                         {multiDisc ? `${track.disc}.${track.position}` : track.position}
                       </span>
@@ -201,7 +203,7 @@ export default async function ReleasePage({ params }: { params: Promise<{ mbid: 
                 })}
               </ol>
             ) : (
-              <p className="rounded-2xl border border-dashed border-line px-4 py-8 text-center text-[13px] text-muted">
+              <p className="px-4 py-8 text-center text-[13px] text-muted">
                 В MusicBrainz нет треклиста для этого релиза.
               </p>
             )}
@@ -272,6 +274,9 @@ export default async function ReleasePage({ params }: { params: Promise<{ mbid: 
               </p>
             )}
           </div>
+          <Suspense fallback={<PitchforkCardSkeleton />}>
+            <PitchforkCard releaseId={release.id} artist={release.artist} title={release.title} />
+          </Suspense>
         </aside>
       </div>
     </div>

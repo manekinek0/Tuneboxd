@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Cover } from "@/components/cover";
 import { ChevronRightIcon, SearchIcon } from "@/components/icons";
-import { yearOf } from "@/lib/format";
+import { plural, yearOf } from "@/lib/format";
 import { searchReleaseGroups } from "@/lib/musicbrainz";
+import { rankByPopularity } from "@/lib/popularity";
 import { typeLabel } from "@/lib/type-label";
 
 export const metadata: Metadata = { title: "Поиск" };
@@ -16,15 +17,17 @@ export default async function SearchPage({
   const { q } = await searchParams;
   const query = typeof q === "string" ? q.trim() : "";
 
-  let results: Awaited<ReturnType<typeof searchReleaseGroups>> = [];
+  let results: Awaited<ReturnType<typeof rankByPopularity>> = [];
   let failed = false;
   if (query) {
     try {
-      results = await searchReleaseGroups(query);
+      results = await rankByPopularity(query, await searchReleaseGroups(query));
     } catch {
       failed = true;
     }
   }
+
+  const rankedByPopularity = results.some((release) => release.popularity != null);
 
   return (
     <div className="space-y-6">
@@ -67,6 +70,15 @@ export default async function SearchPage({
             Каталог берётся из открытой базы MusicBrainz. Релиз сохранится в дневнике при первом
             открытии его страницы.
           </p>
+        </div>
+      )}
+
+      {query && !failed && results.length > 0 && (
+        <div className="flex flex-wrap items-baseline justify-between gap-2 text-[12px] text-muted">
+          <span>
+            {results.length} {plural(results.length, "релиз", "релиза", "релизов")}
+          </span>
+          <span>{rankedByPopularity ? "Сначала популярные · Deezer" : "Сначала релевантные"}</span>
         </div>
       )}
 

@@ -15,11 +15,13 @@ export type ReleaseGroupSummary = {
   primaryType: string | null;
   secondaryTypes: string[];
   releaseDate: string | null;
+  relevance: number;
 };
 
 type MbReleaseGroup = {
   id: string;
   title: string;
+  score?: number;
   "primary-type"?: string | null;
   "secondary-types"?: string[];
   "first-release-date"?: string;
@@ -50,6 +52,7 @@ function summarize(rg: MbReleaseGroup): ReleaseGroupSummary {
     primaryType: rg["primary-type"] ?? null,
     secondaryTypes: rg["secondary-types"] ?? [],
     releaseDate: rg["first-release-date"] || null,
+    relevance: rg.score ?? 0,
   };
 }
 

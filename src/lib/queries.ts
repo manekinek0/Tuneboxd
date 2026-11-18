@@ -36,6 +36,8 @@ function toRelease(row: Row): ReleaseRow {
     primary_type: (row.primary_type as string | null) ?? null,
     secondary_types: secondary,
     release_date: (row.release_date as string | null) ?? null,
+    pitchfork_score: num(row.pitchfork_score),
+    pitchfork_url: (row.pitchfork_url as string | null) ?? null,
   };
 }
 
@@ -69,7 +71,8 @@ function num(value: unknown): number | null {
 
 export async function getReleaseByMbid(mbid: string): Promise<ReleaseRow | null> {
   const rows = (await getSql()`
-    select id, mbid, title, artist, primary_type, secondary_types, release_date
+    select id, mbid, title, artist, primary_type, secondary_types, release_date,
+           pitchfork_score, pitchfork_url
     from public.releases
     where mbid = ${mbid}
   `) as Row[];
@@ -78,7 +81,8 @@ export async function getReleaseByMbid(mbid: string): Promise<ReleaseRow | null>
 
 export async function getReleaseById(id: string): Promise<ReleaseRow | null> {
   const rows = (await getSql()`
-    select id, mbid, title, artist, primary_type, secondary_types, release_date
+    select id, mbid, title, artist, primary_type, secondary_types, release_date,
+           pitchfork_score, pitchfork_url
     from public.releases
     where id = ${id}
   `) as Row[];
@@ -154,7 +158,7 @@ export async function getTopIds(): Promise<string[]> {
 export async function getTopReleases(): Promise<TopEntry[]> {
   const rows = (await getSql()`
     select t.position, rel.id, rel.mbid, rel.title, rel.artist, rel.primary_type,
-           rel.secondary_types, rel.release_date, r.score
+           rel.secondary_types, rel.release_date, rel.pitchfork_score, rel.pitchfork_url, r.score
     from public.top_releases t
     join public.releases rel on rel.id = t.release_id
     left join public.ratings r on r.release_id = rel.id
@@ -171,7 +175,8 @@ export async function getRecentRatings(limit = 10): Promise<RatingWithRelease[]>
   const rows = (await getSql()`
     select r.release_id, r.rhymes, r.structure, r.style, r.individuality, r.vibe, r.score, r.review,
            r.created_at::text as created_at, r.updated_at::text as updated_at,
-           rel.mbid, rel.title, rel.artist, rel.primary_type, rel.secondary_types, rel.release_date
+           rel.mbid, rel.title, rel.artist, rel.primary_type, rel.secondary_types, rel.release_date,
+           rel.pitchfork_score, rel.pitchfork_url
     from public.ratings r
     join public.releases rel on rel.id = r.release_id
     order by r.updated_at desc
@@ -184,7 +189,8 @@ export async function getBestRated(limit = 10): Promise<RatingWithRelease[]> {
   const rows = (await getSql()`
     select r.release_id, r.rhymes, r.structure, r.style, r.individuality, r.vibe, r.score, r.review,
            r.created_at::text as created_at, r.updated_at::text as updated_at,
-           rel.mbid, rel.title, rel.artist, rel.primary_type, rel.secondary_types, rel.release_date
+           rel.mbid, rel.title, rel.artist, rel.primary_type, rel.secondary_types, rel.release_date,
+           rel.pitchfork_score, rel.pitchfork_url
     from public.ratings r
     join public.releases rel on rel.id = r.release_id
     order by r.score desc, r.updated_at desc
@@ -197,7 +203,8 @@ export async function getAllRatings(): Promise<RatingWithRelease[]> {
   const rows = (await getSql()`
     select r.release_id, r.rhymes, r.structure, r.style, r.individuality, r.vibe, r.score, r.review,
            r.created_at::text as created_at, r.updated_at::text as updated_at,
-           rel.mbid, rel.title, rel.artist, rel.primary_type, rel.secondary_types, rel.release_date
+           rel.mbid, rel.title, rel.artist, rel.primary_type, rel.secondary_types, rel.release_date,
+           rel.pitchfork_score, rel.pitchfork_url
     from public.ratings r
     join public.releases rel on rel.id = r.release_id
     order by r.score desc, rel.title asc
@@ -208,7 +215,8 @@ export async function getAllRatings(): Promise<RatingWithRelease[]> {
 export async function getUnratedListens(limit = 12): Promise<ListenWithRelease[]> {
   const rows = (await getSql()`
     select l.release_id, l.listened_at::text as listened_at, l.source,
-           rel.mbid, rel.title, rel.artist, rel.primary_type, rel.secondary_types, rel.release_date
+           rel.mbid, rel.title, rel.artist, rel.primary_type, rel.secondary_types, rel.release_date,
+           rel.pitchfork_score, rel.pitchfork_url
     from public.listens l
     join public.releases rel on rel.id = l.release_id
     left join public.ratings r on r.release_id = l.release_id
@@ -254,7 +262,8 @@ export async function getDiaryStats(): Promise<DiaryStats> {
 export async function getTopCandidates(limit = 2000): Promise<TopCandidate[]> {
   const rows = (await getSql()`
     select rel.id, rel.mbid, rel.title, rel.artist, rel.primary_type, rel.secondary_types,
-           rel.release_date, r.score, l.listened_at::text as listened_at
+           rel.release_date, rel.pitchfork_score, rel.pitchfork_url, r.score,
+           l.listened_at::text as listened_at
     from public.listens l
     join public.releases rel on rel.id = l.release_id
     left join public.ratings r on r.release_id = rel.id
